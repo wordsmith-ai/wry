@@ -325,6 +325,9 @@ impl InnerWebView {
     let options = CoreWebView2EnvironmentOptions::default();
     unsafe {
       options.set_additional_browser_arguments(additional_browser_args);
+      options.set_allow_single_sign_on_using_os_primary_account(
+        pl_attrs.allow_single_sign_on_using_os_primary_account,
+      );
       options.set_are_browser_extensions_enabled(pl_attrs.browser_extensions_enabled);
 
       // Get user's system language

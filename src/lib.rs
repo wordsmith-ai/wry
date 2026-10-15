@@ -1669,6 +1669,7 @@ impl WebViewBuilderExtIos for WebViewBuilder<'_> {
 #[derive(Clone)]
 pub(crate) struct PlatformSpecificWebViewAttributes {
   additional_browser_args: Option<String>,
+  allow_single_sign_on_using_os_primary_account: bool,
   browser_accelerator_keys: bool,
   theme: Option<Theme>,
   use_https: bool,
@@ -1684,6 +1685,7 @@ impl Default for PlatformSpecificWebViewAttributes {
   fn default() -> Self {
     Self {
       additional_browser_args: None,
+      allow_single_sign_on_using_os_primary_account: false,
       browser_accelerator_keys: true, // This is WebView2's default behavior
       default_context_menus: true,    // This is WebView2's default behavior
       theme: None,
@@ -1708,6 +1710,14 @@ pub trait WebViewBuilderExtWindows {
   ///   and `--proxy-server=<scheme>://<host>:<port>` if a proxy is set.
   ///   so if you use this method, you have to add these arguments yourself if you want to keep the same behavior.
   fn with_additional_browser_args<S: Into<String>>(self, additional_args: S) -> Self;
+
+  /// Determines whether WebView2 can use the signed-in Windows account for
+  /// single sign-on with Microsoft identity resources.
+  ///
+  /// The default value is `false`.
+  ///
+  /// <https://learn.microsoft.com/en-us/dotnet/api/microsoft.web.webview2.core.corewebview2environmentoptions.allowsinglesignonusingosprimaryaccount>
+  fn with_allow_single_sign_on_using_os_primary_account(self, enabled: bool) -> Self;
 
   /// Determines whether browser-specific accelerator keys are enabled. When this setting is set to
   /// `false`, it disables all accelerator keys that access features specific to a web browser.
@@ -1782,6 +1792,13 @@ pub trait WebViewBuilderExtWindows {
 impl WebViewBuilderExtWindows for WebViewBuilder<'_> {
   fn with_additional_browser_args<S: Into<String>>(mut self, additional_args: S) -> Self {
     self.platform_specific.additional_browser_args = Some(additional_args.into());
+    self
+  }
+
+  fn with_allow_single_sign_on_using_os_primary_account(mut self, enabled: bool) -> Self {
+    self
+      .platform_specific
+      .allow_single_sign_on_using_os_primary_account = enabled;
     self
   }
 
@@ -2503,6 +2520,18 @@ pub struct InitializationScript {
 #[cfg(test)]
 mod tests {
   use super::*;
+
+  #[test]
+  #[cfg(windows)]
+  fn configures_os_primary_account_sso() {
+    let builder = WebViewBuilder::new().with_allow_single_sign_on_using_os_primary_account(true);
+
+    assert!(
+      builder
+        .platform_specific
+        .allow_single_sign_on_using_os_primary_account
+    );
+  }
 
   #[test]
   #[cfg_attr(miri, ignore)]
