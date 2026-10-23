@@ -1346,8 +1346,17 @@ r#"Object.defineProperty(window, 'ipc', {
 }
 
 pub fn url_from_webview(webview: &WKWebView) -> Result<String> {
-  let url_obj = unsafe { webview.URL().unwrap() };
-  let absolute_url = unsafe { url_obj.absoluteString().unwrap() };
+  // `WKWebView.URL()` is nil when the webview has no active navigation, for
+  // example after a failed initial navigation.
+  let url_obj = unsafe { webview.URL() };
+  let Some(url_obj) = url_obj else {
+    return Err(Error::Io(std::io::Error::other("WKWebView URL is nil")));
+  };
+  let Some(absolute_url) = (unsafe { url_obj.absoluteString() }) else {
+    return Err(Error::Io(std::io::Error::other(
+      "WKWebView URL absoluteString is nil",
+    )));
+  };
 
   let bytes = {
     let bytes: *const c_char = absolute_url.UTF8String();
